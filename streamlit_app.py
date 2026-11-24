@@ -25,6 +25,60 @@ STAGE_COLORS = {"Out of bed": "#d9d8d2", "Awake": GRAY, "REM": AQUA, "Light": BL
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
+# ----------------------------------------------------------------------------- access control
+def signed_in() -> bool:
+    """True only when Streamlit reports a signed-in user; anything unclear counts as signed out."""
+    try:
+        return bool(st.user.is_logged_in)
+    except Exception:
+        return False
+
+
+def require_sign_in() -> None:
+    """Stop the script unless the viewer is allowed to see the data.
+
+    * No Streamlit secrets at all (a local run using .env): open, it is your own machine.
+    * Secrets present (a hosted deployment): viewers must sign in through the OIDC provider
+      configured under [auth] AND their email must be listed in ALLOWED_EMAILS.
+    Anything half-configured blocks everyone rather than letting everyone in.
+    """
+    try:
+        hosted = len(st.secrets) > 0
+        auth_configured = "auth" in st.secrets
+        raw = st.secrets.get("ALLOWED_EMAILS", [])
+    except Exception:
+        return  # no secrets file: local run
+    if not hosted:
+        return
+
+    if not auth_configured:
+        st.error("This deployment has no sign-in configured, so it is locked. Add an `[auth]` section and "
+                 "`ALLOWED_EMAILS` to the app's secrets (see the README).", title="Locked", icon=":material/lock:")
+        st.stop()
+
+    if not signed_in():
+        st.title(":material/bedtime: Eight Sleep insights")
+        st.write("This dashboard is private. Sign in to continue.")
+        if st.button("Sign in with Google", icon=":material/login:", type="primary"):
+            st.login()
+        st.stop()
+
+    if isinstance(raw, str):
+        raw = raw.split(",")
+    allowed = {str(item).strip().lower() for item in raw if str(item).strip()}
+    email = str(st.user.get("email") or "").strip().lower()
+    verified = st.user.get("email_verified", True) is not False
+    if not email or not verified or email not in allowed:
+        st.error(f"The account {email or '(no email)'} is not on this dashboard's access list.",
+                 title="No access", icon=":material/block:")
+        if st.button("Sign out", icon=":material/logout:"):
+            st.logout()
+        st.stop()
+
+
+require_sign_in()
+
+
 # ----------------------------------------------------------------------------- display helpers
 # Charts and tables take their accessible name from the section heading above them.
 _section = {"title": "Eight Sleep data"}
@@ -332,6 +386,10 @@ with st.sidebar:
         st.rerun()
     st.caption("Read-only. Data comes from Eight Sleep's cloud and is cached for 5 minutes. "
                "Patterns shown here are computed by this dashboard, not by Eight Sleep.")
+    if signed_in():
+        st.caption(f"Signed in as {st.user.get('email', '')}")
+        if st.button("Sign out", icon=":material/logout:", width="stretch"):
+            st.logout()
 
 df = nights_frame(side, days)
 tz = client.tz
