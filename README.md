@@ -31,13 +31,23 @@ python -m venv .venv
 .venv\Scripts\activate            # Windows; use `source .venv/bin/activate` elsewhere
 pip install -r requirements.txt
 
-# Login constants come from the maintained pyEight fork
-git clone --depth 1 https://github.com/lukas-clarke/pyEight.git vendor/pyEight
-
 copy .env.example .env            # then fill in EIGHT_EMAIL and EIGHT_PASSWORD
 ```
 
 The account must sign in with an email and password (not Google or Apple sign-in).
+
+## Deploying on Streamlit Community Cloud
+
+1. In the app's **Settings → Secrets**, add:
+
+   ```toml
+   EIGHT_EMAIL = "you@example.com"
+   EIGHT_PASSWORD = "your-password"
+   EIGHT_TZ = "Asia/Kolkata"
+   ```
+
+2. In **Settings → Sharing**, restrict who can view the app. A public app lets anyone with the
+   link see your sleep and health data.
 
 ## Run
 

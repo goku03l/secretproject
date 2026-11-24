@@ -2,7 +2,4 @@ streamlit>=1.57
 pandas
 altair
 httpx>=0.24.0
-# needed to import the pyEight fork (vendor/pyEight)
-aiohttp>=3.8.0
-python-dateutil>=2.8.0
 tzdata

@@ -7,6 +7,7 @@ Read-only: every call to Eight Sleep is a GET made through eight_api.EightClient
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timedelta
 
 import altair as alt
@@ -43,8 +44,19 @@ def show_table(frame, **kwargs) -> None:
 
 
 # ----------------------------------------------------------------------------- data access
+def secrets_to_env() -> None:
+    """On Streamlit Community Cloud the login lives in st.secrets, not a .env file."""
+    try:
+        for name in ("EIGHT_EMAIL", "EIGHT_PASSWORD", "EIGHT_TZ", "EIGHT_CLIENT_ID", "EIGHT_CLIENT_SECRET"):
+            if name in st.secrets:
+                os.environ.setdefault(name, str(st.secrets[name]))
+    except Exception:
+        pass  # no secrets file: running locally with .env
+
+
 @st.cache_resource
 def get_client() -> EightClient:
+    secrets_to_env()
     client = EightClient()
     client.discover()
     return client
@@ -300,7 +312,17 @@ def insight_lines(df: pd.DataFrame) -> list[str]:
 
 
 # ----------------------------------------------------------------------------- sidebar
-client = get_client()
+try:
+    client = get_client()
+except Exception as err:
+    st.error(
+        "Add `EIGHT_EMAIL` and `EIGHT_PASSWORD` to the app's secrets (Streamlit Cloud: Manage app → Settings → Secrets) "
+        "or to a local `.env` file, then reload.\n\n"
+        f"Details: {type(err).__name__}: {err}",
+        title="Could not sign in to Eight Sleep", icon=":material/error:",
+    )
+    st.stop()
+
 with st.sidebar:
     st.title(":material/bedtime: Eight Sleep")
     side = st.segmented_control("Bed side", ["left", "right"], default="left", format_func=str.capitalize) or "left"

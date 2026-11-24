@@ -1,7 +1,8 @@
 """Small synchronous, READ-ONLY client for Eight Sleep's cloud API, plus an endpoint catalog.
 
 Only GET requests are ever sent (the one POST is the login token request).
-Login details come from .env; the app client id/secret come from the pyEight fork.
+Login details come from environment variables (or a local .env file). No other
+project files or libraries are needed besides httpx.
 
     python eight_api.py            # probe every catalog endpoint, print what answers
 """
@@ -19,9 +20,13 @@ from pathlib import Path
 import httpx
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT / "vendor" / "pyEight"))
 
-from pyeight.constants import AUTH_URL, KNOWN_CLIENT_ID, KNOWN_CLIENT_SECRET  # noqa: E402
+# Login endpoint and the Eight Sleep app's client id/secret, as published in the
+# open-source pyEight library (github.com/lukas-clarke/pyEight). They identify the
+# app, not your account. Override with EIGHT_CLIENT_ID / EIGHT_CLIENT_SECRET if they change.
+AUTH_URL = "https://auth-api.8slp.net/v1/tokens"
+KNOWN_CLIENT_ID = "0894c7f33bb94800a03f1f4df13a4f38"
+KNOWN_CLIENT_SECRET = "f0954a3ed5763ba3d06834c73731a32f15f168f47d4f164751275def86db0c76"
 
 CLIENT = "https://client-api.8slp.net/v1"
 APP = "https://app-api.8slp.net"
@@ -121,7 +126,7 @@ class EightClient:
         self.password = os.environ.get("EIGHT_PASSWORD", "")
         self.tz = os.environ.get("EIGHT_TZ", "Asia/Kolkata")
         if not self.email or not self.password:
-            raise RuntimeError("EIGHT_EMAIL / EIGHT_PASSWORD missing in .env")
+            raise RuntimeError("EIGHT_EMAIL and EIGHT_PASSWORD are not set")
         self.http = httpx.Client(timeout=40)
         self.token = ""
         self.token_expires = 0.0
@@ -130,7 +135,8 @@ class EightClient:
 
     def _login(self) -> None:
         response = self.http.post(AUTH_URL, headers=HEADERS, json={
-            "client_id": KNOWN_CLIENT_ID, "client_secret": KNOWN_CLIENT_SECRET,
+            "client_id": os.environ.get("EIGHT_CLIENT_ID") or KNOWN_CLIENT_ID,
+            "client_secret": os.environ.get("EIGHT_CLIENT_SECRET") or KNOWN_CLIENT_SECRET,
             "grant_type": "password", "username": self.email, "password": self.password,
         })
         response.raise_for_status()
