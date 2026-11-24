@@ -1,4 +1,4 @@
-streamlit[auth]>=1.57
+streamlit>=1.57
 pandas
 altair
 httpx>=0.24.0

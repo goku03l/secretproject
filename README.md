@@ -38,45 +38,16 @@ The account must sign in with an email and password (not Google or Apple sign-in
 
 ## Deploying on Streamlit Community Cloud
 
-A hosted deployment is locked until sign-in is configured. Viewers must sign in with Google
-and their email must be on your access list.
-
-1. **Create a Google OAuth client.** In the Google Cloud Console: APIs & Services →
-   Credentials → Create credentials → OAuth client ID → Web application. Add this authorised
-   redirect URI, using your app's real address:
-
-   ```
-   https://YOUR-APP.streamlit.app/oauth2callback
-   ```
-
-2. **Add the secrets.** In the app's **Settings → Secrets**:
+1. In the app's **Settings → Secrets**, add:
 
    ```toml
    EIGHT_EMAIL = "you@example.com"
    EIGHT_PASSWORD = "your-password"
    EIGHT_TZ = "Asia/Kolkata"
-
-   # Who may view the dashboard
-   ALLOWED_EMAILS = ["you@example.com", "partner@example.com"]
-
-   [auth]
-   redirect_uri = "https://YOUR-APP.streamlit.app/oauth2callback"
-   cookie_secret = "a-long-random-string"
-   client_id = "from-google-cloud-console"
-   client_secret = "from-google-cloud-console"
-   server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
    ```
 
-   Generate `cookie_secret` with `python -c "import secrets; print(secrets.token_hex(32))"`.
-
-How access is decided:
-
-| Situation | Result |
-|---|---|
-| Running locally with `.env` and no Streamlit secrets | Open (it is your own machine) |
-| Secrets present but no `[auth]` section | Locked for everyone |
-| Signed in, email not in `ALLOWED_EMAILS` (or the list is empty) | No access |
-| Signed in with a listed, verified email | Dashboard shown |
+2. In **Settings → Sharing**, restrict who can view the app. A public app lets anyone with the
+   link see your sleep and health data.
 
 ## Run
 
