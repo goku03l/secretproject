@@ -1,0 +1,11 @@
+# Whitelist: ignore everything, then allow only the files meant to be shared.
+# Credentials (.env, diffuser_settings.json, firmware secrets) and sleep data (out/)
+# must never be committed.
+*
+!.gitignore
+!README.md
+!requirements.txt
+!.env.example
+!streamlit_app.py
+!eight_api.py
+!endpoints_working.json
